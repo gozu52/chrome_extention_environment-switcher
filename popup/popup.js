@@ -124,12 +124,12 @@ async function displayEnvironments() {
   let html = '';
   
   // グループあり環境を表示
-  groups.forEach(group => {
+  groups.forEach((group, index) => {
     if (groupedEnvs[group] && groupedEnvs[group].length > 0) {
-      html += createGroupHTML(group, groupedEnvs[group], currentDomain);
+      html += createGroupHTML(group, groupedEnvs[group], currentDomain, index, groups.length);
     }
   });
-  
+
   // グループなし環境を表示
   if (ungroupedEnvs.length > 0) {
     html += ungroupedEnvs.map(env => createEnvItemHTML(env, currentDomain)).join('');
@@ -142,7 +142,7 @@ async function displayEnvironments() {
 }
 
 // グループHTMLを生成
-function createGroupHTML(groupName, envs, currentDomain) {
+function createGroupHTML(groupName, envs, currentDomain, groupIndex, totalGroups) {
   const envsHTML = envs.map(env => createEnvItemHTML(env, currentDomain)).join('');
   
   return `
@@ -153,7 +153,12 @@ function createGroupHTML(groupName, envs, currentDomain) {
           <span class="group-name">${groupName}</span>
           <span class="group-count">(${envs.length})</span>
         </div>
-        <button class="group-delete-btn" data-group="${groupName}">グループ削除</button>
+        <div class="group-actions">
+          <button class="group-move-btn" data-group="${groupName}" data-direction="up" ${groupIndex === 0 ? 'disabled' : ''}>↑</button>
+          <button class="group-move-btn" data-group="${groupName}" data-direction="down" ${groupIndex === totalGroups - 1 ? 'disabled' : ''}>↓</button>
+          <button class="group-edit-btn" data-group="${groupName}">編集</button>
+          <button class="group-delete-btn" data-group="${groupName}">削除</button>
+        </div>
       </div>
       <div class="group-environments" data-group="${groupName}">
         ${envsHTML}
@@ -237,6 +242,25 @@ function attachEventListeners(environments) {
       await deleteEnvironment(index);
     });
   });
+
+  // グループ編集ボタン
+  document.querySelectorAll('.group-edit-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const groupName = btn.dataset.group;
+      await editGroup(groupName);
+    });
+  });
+  
+  // グループ並び替えボタン
+  document.querySelectorAll('.group-move-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const groupName = btn.dataset.group;
+      const direction = btn.dataset.direction;
+      await moveGroup(groupName, direction);
+    });
+  });
 }
 
 // 新しいグループを追加
@@ -281,6 +305,62 @@ async function deleteGroup(groupName) {
   
   // 表示を更新
   await updateGroupSelect();
+  await displayEnvironments();
+}
+
+// グループ名を編集
+async function editGroup(oldGroupName) {
+  const newGroupName = prompt('新しいグループ名を入力してください:', oldGroupName);
+  
+  if (!newGroupName || newGroupName.trim() === '') return;
+  if (newGroupName === oldGroupName) return;
+  
+  const groups = await getGroups();
+  
+  // 重複チェック
+  if (groups.includes(newGroupName.trim())) {
+    alert('このグループ名は既に存在します');
+    return;
+  }
+  
+  // グループリストを更新
+  const groupIndex = groups.indexOf(oldGroupName);
+  if (groupIndex !== -1) {
+    groups[groupIndex] = newGroupName.trim();
+  }
+  await saveGroups(groups);
+  
+  // 環境のグループ名を更新
+  const environments = await getEnvironments();
+  environments.forEach(env => {
+    if (env.group === oldGroupName) {
+      env.group = newGroupName.trim();
+    }
+  });
+  await saveEnvironments(environments);
+  
+  // 表示を更新
+  await updateGroupSelect();
+  await displayEnvironments();
+}
+
+// グループを並び替え
+async function moveGroup(groupName, direction) {
+  const groups = await getGroups();
+  const currentIndex = groups.indexOf(groupName);
+  
+  if (currentIndex === -1) return;
+  
+  // 移動先のインデックスを計算
+  const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  
+  // 範囲チェック
+  if (newIndex < 0 || newIndex >= groups.length) return;
+  
+  // 配列内で要素を入れ替え
+  [groups[currentIndex], groups[newIndex]] = [groups[newIndex], groups[currentIndex]];
+  
+  await saveGroups(groups);
   await displayEnvironments();
 }
 
