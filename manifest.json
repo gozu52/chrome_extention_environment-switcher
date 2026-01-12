@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "ServiceNow Environment Switcher",
+  "version": "1.0.0",
+  "description": "ServiceNowの複数環境を簡単に切り替えるツール",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.service-now.com/*",
+    "https://*.servicenow.com/*"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
