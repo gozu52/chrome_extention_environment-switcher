@@ -9,8 +9,38 @@
 <body>
   <div class="container">
     <h1>🔄 Environment Switcher</h1>
-    <p>ServiceNow環境を簡単に切り替え</p>
-    <button id="testBtn">動作テスト</button>
+    
+    <!-- 環境登録フォーム -->
+    <div class="form-section">
+      <h2>環境を追加</h2>
+      <input type="text" id="envName" placeholder="環境名 (例: Dev, Test, Prod)" />
+      <input type="text" id="envUrl" placeholder="ServiceNow URL" />
+      
+      <label>色を選択:</label>
+      <div class="color-picker">
+        <input type="radio" name="color" value="#4CAF50" id="green" checked>
+        <label for="green" class="color-option" style="background-color: #4CAF50;"></label>
+        
+        <input type="radio" name="color" value="#FFC107" id="yellow">
+        <label for="yellow" class="color-option" style="background-color: #FFC107;"></label>
+        
+        <input type="radio" name="color" value="#F44336" id="red">
+        <label for="red" class="color-option" style="background-color: #F44336;"></label>
+        
+        <input type="radio" name="color" value="#2196F3" id="blue">
+        <label for="blue" class="color-option" style="background-color: #2196F3;"></label>
+      </div>
+      
+      <button id="addEnvBtn">環境を追加</button>
+    </div>
+    
+    <!-- 登録済み環境リスト -->
+    <div class="env-list-section">
+      <h2>登録済み環境</h2>
+      <div id="envList" class="env-list">
+        <p class="empty-message">まだ環境が登録されていません</p>
+      </div>
+    </div>
   </div>
   <script src="popup.js"></script>
 </body>

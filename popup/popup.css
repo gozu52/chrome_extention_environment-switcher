@@ -1,8 +1,10 @@
 body {
-  width: 300px;
+  width: 350px;
+  min-height: 400px;
   padding: 0;
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f5f5;
 }
 
 .container {
@@ -10,28 +12,157 @@ body {
 }
 
 h1 {
-  font-size: 18px;
-  margin: 0 0 8px 0;
+  font-size: 20px;
+  margin: 0 0 16px 0;
   color: #333;
+  text-align: center;
 }
 
-p {
+h2 {
+  font-size: 14px;
+  margin: 0 0 12px 0;
+  color: #666;
+  font-weight: 600;
+}
+
+/* フォームセクション */
+.form-section {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+label {
+  display: block;
   font-size: 12px;
   color: #666;
-  margin: 0 0 16px 0;
+  margin-bottom: 8px;
+}
+
+/* 色選択 */
+.color-picker {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.color-picker input[type="radio"] {
+  display: none;
+}
+
+.color-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.color-picker input[type="radio"]:checked + .color-option {
+  border-color: #333;
+  transform: scale(1.1);
 }
 
 button {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   background-color: #4CAF50;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
 }
 
 button:hover {
   background-color: #45a049;
+}
+
+/* 環境リストセクション */
+.env-list-section {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.env-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.env-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 4px solid;
+}
+
+.env-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.env-info {
+  flex: 1;
+}
+
+.env-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.env-url {
+  font-size: 11px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delete-btn {
+  width: auto;
+  padding: 6px 12px;
+  background-color: #f44336;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.delete-btn:hover {
+  background-color: #da190b;
+}
+
+.empty-message {
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+  padding: 20px;
+  margin: 0;
 }
