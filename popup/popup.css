@@ -133,7 +133,8 @@ label {
 
 /* 色選択 */
 .color-picker {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-bottom: 12px;
 }
