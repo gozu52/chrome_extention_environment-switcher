@@ -62,12 +62,6 @@ h2 {
   background-color: #1976D2;
 }
 
-.file-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* フォームセクション */
 .form-section {
   background: white;
@@ -97,6 +91,44 @@ label {
   font-size: 12px;
   color: #666;
   margin-bottom: 8px;
+}
+
+/* グループ選択 */
+.group-input-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.group-select {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.group-select:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.small-btn {
+  width: 40px;
+  padding: 10px;
+  background-color: #9E9E9E;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.small-btn:hover {
+  background-color: #757575;
 }
 
 /* 色選択 */
@@ -155,6 +187,80 @@ button:hover {
   gap: 8px;
 }
 
+/* グループヘッダー */
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+  margin-top: 8px;
+}
+
+.group-header:first-child {
+  margin-top: 0;
+}
+
+.group-header:hover {
+  background-color: #e0e0e0;
+}
+
+.group-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.group-toggle {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.2s;
+}
+
+.group-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
+.group-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: #555;
+}
+
+.group-count {
+  font-size: 11px;
+  color: #999;
+}
+
+.group-delete-btn {
+  width: auto;
+  padding: 4px 8px;
+  background-color: #f44336;
+  font-size: 11px;
+  margin: 0;
+}
+
+.group-delete-btn:hover {
+  background-color: #da190b;
+}
+
+.group-environments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 16px;
+  margin-top: 8px;
+}
+
+.group-environments.collapsed {
+  display: none;
+}
+
+/* 環境アイテム */
 .env-item {
   display: flex;
   justify-content: space-between;
@@ -185,6 +291,7 @@ button:hover {
 
 .env-info {
   flex: 1;
+  min-width: 0;
 }
 
 .env-name {
@@ -195,6 +302,7 @@ button:hover {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .env-url {
@@ -203,6 +311,16 @@ button:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-bottom: 4px;
+}
+
+/* アクセス情報 */
+.env-access-info {
+  font-size: 10px;
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* 現在の環境バッジ */
@@ -216,12 +334,33 @@ button:hover {
   font-weight: 600;
 }
 
+/* 環境ボタングループ */
+.env-buttons {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.edit-btn,
 .delete-btn {
   width: auto;
-  padding: 6px 12px;
+  padding: 4px 8px;
+  font-size: 11px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.edit-btn {
+  background-color: #FF9800;
+}
+
+.edit-btn:hover {
+  background-color: #F57C00;
+}
+
+.delete-btn {
   background-color: #f44336;
-  font-size: 12px;
-  margin-left: 8px;
 }
 
 .delete-btn:hover {
@@ -234,4 +373,48 @@ button:hover {
   font-size: 13px;
   padding: 20px;
   margin: 0;
+}
+
+/* モーダル */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  width: 320px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #333;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.modal-buttons button {
+  flex: 1;
 }

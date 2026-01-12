@@ -18,12 +18,20 @@
         <input type="file" id="importFile" accept=".json" style="display: none;">
       </div>
     </div>
-
+    
     <!-- 環境登録フォーム -->
     <div class="form-section">
       <h2>環境を追加</h2>
       <input type="text" id="envName" placeholder="環境名 (例: Dev, Test, Prod)" />
       <input type="text" id="envUrl" placeholder="ServiceNow URL" />
+      
+      <label>グループ (任意):</label>
+      <div class="group-input-container">
+        <select id="envGroup" class="group-select">
+          <option value="">グループなし</option>
+        </select>
+        <button id="addGroupBtn" class="small-btn" type="button">+</button>
+      </div>
       
       <label>色を選択:</label>
       <div class="color-picker">
@@ -48,6 +56,40 @@
       <h2>登録済み環境</h2>
       <div id="envList" class="env-list">
         <p class="empty-message">まだ環境が登録されていません</p>
+      </div>
+    </div>
+  </div>
+  
+    <!-- 編集モーダル -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h2>環境を編集</h2>
+      <input type="text" id="editEnvName" placeholder="環境名" />
+      <input type="text" id="editEnvUrl" placeholder="ServiceNow URL" />
+      
+      <label>グループ (任意):</label>
+      <select id="editEnvGroup" class="group-select">
+        <option value="">グループなし</option>
+      </select>
+      
+      <label>色を選択:</label>
+      <div class="color-picker">
+        <input type="radio" name="editColor" value="#4CAF50" id="editGreen">
+        <label for="editGreen" class="color-option" style="background-color: #4CAF50;"></label>
+        
+        <input type="radio" name="editColor" value="#FFC107" id="editYellow">
+        <label for="editYellow" class="color-option" style="background-color: #FFC107;"></label>
+        
+        <input type="radio" name="editColor" value="#F44336" id="editRed">
+        <label for="editRed" class="color-option" style="background-color: #F44336;"></label>
+        
+        <input type="radio" name="editColor" value="#2196F3" id="editBlue">
+        <label for="editBlue" class="color-option" style="background-color: #2196F3;"></label>
+      </div>
+      
+      <div class="modal-buttons">
+        <button id="cancelEditBtn" class="secondary-btn">キャンセル</button>
+        <button id="saveEditBtn">保存</button>
       </div>
     </div>
   </div>

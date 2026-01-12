@@ -18,7 +18,7 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 chrome.commands.onCommand.addListener(async (command) => {
   console.log('Command received:', command);
   
-  // switch-env-1 から switch-env-9 のコマンドを処理
+  // switch-env-1 から switch-env-3 のコマンドを処理
   if (command.startsWith('switch-env-')) {
     const envIndex = parseInt(command.split('-')[2]) - 1; // 0-indexed
     await switchToEnvironmentByIndex(envIndex);
@@ -37,6 +37,11 @@ async function switchToEnvironmentByIndex(index) {
   }
   
   const env = environments[index];
+  
+  // アクセス履歴を更新
+  environments[index].lastAccessed = Date.now();
+  environments[index].accessCount = (environments[index].accessCount || 0) + 1;
+  await chrome.storage.sync.set({ environments });
   
   // 現在のアクティブなタブを取得
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
