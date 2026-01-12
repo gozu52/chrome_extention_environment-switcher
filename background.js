@@ -14,6 +14,40 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
   });
 });
 
+// キーボードショートカットのコマンドリスナー
+chrome.commands.onCommand.addListener(async (command) => {
+  console.log('Command received:', command);
+  
+  // switch-env-1 から switch-env-9 のコマンドを処理
+  if (command.startsWith('switch-env-')) {
+    const envIndex = parseInt(command.split('-')[2]) - 1; // 0-indexed
+    await switchToEnvironmentByIndex(envIndex);
+  }
+});
+
+// 指定されたインデックスの環境に切り替え
+async function switchToEnvironmentByIndex(index) {
+  // 環境データを取得
+  const result = await chrome.storage.sync.get(['environments']);
+  const environments = result.environments || [];
+  
+  if (index < 0 || index >= environments.length) {
+    console.log(`環境 ${index + 1} は存在しません`);
+    return;
+  }
+  
+  const env = environments[index];
+  
+  // 現在のアクティブなタブを取得
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  
+  if (tabs[0]) {
+    // URLを更新
+    chrome.tabs.update(tabs[0].id, { url: env.url });
+    console.log(`環境 "${env.name}" に切り替えました`);
+  }
+}
+
 // アイコンとバッジを更新する関数
 async function updateIconAndBadge(tabId, url) {
   // 環境データを取得
