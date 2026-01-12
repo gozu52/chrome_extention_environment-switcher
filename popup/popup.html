@@ -8,7 +8,10 @@
 </head>
 <body>
   <div class="container">
+    <div class="header">
     <h1>🔄 Environment Switcher</h1>
+    <button id="settingsBtn" class="settings-btn" title="設定">⚙️</button>
+    </div>
     
     <!-- エクスポート/インポート セクション -->
     <div class="export-import-section">
@@ -110,10 +113,32 @@
         <input type="radio" name="editColor" value="#607D8B" id="editGray">
         <label for="editGray" class="color-option" style="background-color: #607D8B;"></label>
       </div>
+
+      <label>メモ (任意):</label>
+      <textarea id="editEnvMemo" placeholder="ログイン情報のヒントや注意事項など..." rows="3"></textarea>
       
       <div class="modal-buttons">
         <button id="cancelEditBtn" class="secondary-btn">キャンセル</button>
         <button id="saveEditBtn">保存</button>
+      </div>
+    </div>
+  </div>
+  <!-- 設定モーダル -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>⚙️ 設定</h2>
+      
+      <div class="setting-item">
+        <label>テーマ</label>
+        <select id="themeSelect" class="theme-select">
+          <option value="light">🌞 ライトモード</option>
+          <option value="dark">🌙 ダークモード</option>
+          <option value="auto">🔄 システム設定に従う</option>
+        </select>
+      </div>
+      
+      <div class="modal-buttons">
+        <button id="closeSettingsBtn" class="secondary-btn">閉じる</button>
       </div>
     </div>
   </div>

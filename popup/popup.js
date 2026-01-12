@@ -1,6 +1,9 @@
 // 編集中の環境インデックスを保持
 let editingIndex = null;
 
+// テーマ設定
+let currentTheme = 'light';
+
 // 環境データを取得
 async function getEnvironments() {
   const result = await chrome.storage.sync.get(['environments']);
@@ -104,17 +107,27 @@ async function displayEnvironments() {
     }
   });
   
-  // 各グループ内でアクセス日時順にソート
+  // 各グループ内でソート（お気に入り優先、次にアクセス日時）
   Object.keys(groupedEnvs).forEach(group => {
     groupedEnvs[group].sort((a, b) => {
+      // お気に入り優先
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      
+      // 同じお気に入り状態なら、アクセス日時順
       const timeA = a.lastAccessed || 0;
       const timeB = b.lastAccessed || 0;
       return timeB - timeA;
     });
   });
   
-  // グループなし環境もソート
+  // グループなし環境をソート（お気に入り優先、次にアクセス日時）
   ungroupedEnvs.sort((a, b) => {
+    // お気に入り優先
+    if (a.isFavorite && !b.isFavorite) return -1;
+    if (!a.isFavorite && b.isFavorite) return 1;
+    
+    // 同じお気に入り状態なら、アクセス日時順
     const timeA = a.lastAccessed || 0;
     const timeB = b.lastAccessed || 0;
     return timeB - timeA;
@@ -126,10 +139,10 @@ async function displayEnvironments() {
   // グループあり環境を表示
   groups.forEach((group, index) => {
     if (groupedEnvs[group] && groupedEnvs[group].length > 0) {
-      html += createGroupHTML(group, groupedEnvs[group], currentDomain, index, groups.length);
+      html += createGroupHTML(group, groupedEnvs[group], currentDomain);
     }
   });
-
+  
   // グループなし環境を表示
   if (ungroupedEnvs.length > 0) {
     html += ungroupedEnvs.map(env => createEnvItemHTML(env, currentDomain)).join('');
@@ -142,11 +155,11 @@ async function displayEnvironments() {
 }
 
 // グループHTMLを生成
-function createGroupHTML(groupName, envs, currentDomain, groupIndex, totalGroups) {
+function createGroupHTML(groupName, envs, currentDomain) {
   const envsHTML = envs.map(env => createEnvItemHTML(env, currentDomain)).join('');
   
   return `
-    <div class="group-container">
+    <div class="group-container" draggable="true" data-group="${groupName}">
       <div class="group-header" data-group="${groupName}">
         <div class="group-header-left">
           <span class="group-toggle">▼</span>
@@ -154,8 +167,6 @@ function createGroupHTML(groupName, envs, currentDomain, groupIndex, totalGroups
           <span class="group-count">(${envs.length})</span>
         </div>
         <div class="group-actions">
-          <button class="group-move-btn" data-group="${groupName}" data-direction="up" ${groupIndex === 0 ? 'disabled' : ''}>↑</button>
-          <button class="group-move-btn" data-group="${groupName}" data-direction="down" ${groupIndex === totalGroups - 1 ? 'disabled' : ''}>↓</button>
           <button class="group-edit-btn" data-group="${groupName}">編集</button>
           <button class="group-delete-btn" data-group="${groupName}">削除</button>
         </div>
@@ -174,12 +185,19 @@ function createEnvItemHTML(env, currentDomain) {
   const currentClass = isCurrent ? 'current-env' : '';
   const currentBadge = isCurrent ? '<span class="current-badge">現在の環境</span>' : '';
   const accessInfo = `${getRelativeTime(env.lastAccessed)} | ${env.accessCount || 0}回`;
+  const favoriteIcon = env.isFavorite ? '⭐' : '☆';
+  const favoriteClass = env.isFavorite ? 'is-favorite' : '';
+  const memoDisplay = env.memo ? `<div class="env-memo">📝 ${env.memo}</div>` : '';
   
   return `
-    <div class="env-item ${currentClass}" style="border-left-color: ${env.color};" data-index="${env.originalIndex}">
+    <div class="env-item ${currentClass} ${favoriteClass}" 
+         style="border-left-color: ${env.color};" 
+         data-index="${env.originalIndex}">
+      <button class="favorite-btn" data-index="${env.originalIndex}" title="お気に入り">${favoriteIcon}</button>
       <div class="env-info">
         <div class="env-name">${env.name} ${currentBadge}</div>
         <div class="env-url">${env.url}</div>
+        ${memoDisplay}
         <div class="env-access-info">${accessInfo}</div>
       </div>
       <div class="env-buttons">
@@ -195,7 +213,8 @@ function attachEventListeners(environments) {
   // グループヘッダーのクリック（折りたたみ）
   document.querySelectorAll('.group-header').forEach(header => {
     header.addEventListener('click', (e) => {
-      if (!e.target.classList.contains('group-delete-btn')) {
+      if (!e.target.classList.contains('group-delete-btn') && 
+          !e.target.classList.contains('group-edit-btn')) {
         const groupName = header.dataset.group;
         const groupEnvs = document.querySelector(`.group-environments[data-group="${groupName}"]`);
         const toggle = header.querySelector('.group-toggle');
@@ -203,6 +222,61 @@ function attachEventListeners(environments) {
         groupEnvs.classList.toggle('collapsed');
         toggle.classList.toggle('collapsed');
       }
+    });
+  });
+  
+  // グループのドラッグ&ドロップ
+  let draggedGroup = null;
+  
+  document.querySelectorAll('.group-container').forEach(container => {
+    // ドラッグ開始
+    container.addEventListener('dragstart', (e) => {
+      draggedGroup = container.dataset.group;
+      container.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    
+    // ドラッグ終了
+    container.addEventListener('dragend', (e) => {
+      container.style.opacity = '1';
+      draggedGroup = null;
+      document.querySelectorAll('.group-container').forEach(c => {
+        c.classList.remove('drag-over');
+      });
+    });
+    
+    // ドラッグオーバー
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      if (draggedGroup && draggedGroup !== container.dataset.group) {
+        container.classList.add('drag-over');
+      }
+    });
+    
+    // ドラッグリーブ
+    container.addEventListener('dragleave', (e) => {
+      container.classList.remove('drag-over');
+    });
+    
+    // ドロップ
+    container.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      container.classList.remove('drag-over');
+      
+      if (draggedGroup && draggedGroup !== container.dataset.group) {
+        await reorderGroups(draggedGroup, container.dataset.group);
+      }
+    });
+  });
+  
+  // グループ編集ボタン
+  document.querySelectorAll('.group-edit-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const groupName = btn.dataset.group;
+      await editGroup(groupName);
     });
   });
   
@@ -218,7 +292,9 @@ function attachEventListeners(environments) {
   // 環境クリックイベント
   document.querySelectorAll('.env-item').forEach(item => {
     item.addEventListener('click', (e) => {
-      if (!e.target.classList.contains('delete-btn') && !e.target.classList.contains('edit-btn')) {
+      if (!e.target.classList.contains('delete-btn') && 
+          !e.target.classList.contains('edit-btn') &&
+          !e.target.classList.contains('favorite-btn')) {
         const index = parseInt(item.dataset.index);
         switchEnvironment(environments[index], index);
       }
@@ -242,23 +318,13 @@ function attachEventListeners(environments) {
       await deleteEnvironment(index);
     });
   });
-
-  // グループ編集ボタン
-  document.querySelectorAll('.group-edit-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const groupName = btn.dataset.group;
-      await editGroup(groupName);
-    });
-  });
   
-  // グループ並び替えボタン
-  document.querySelectorAll('.group-move-btn').forEach(btn => {
+  // お気に入りボタンイベント
+  document.querySelectorAll('.favorite-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const groupName = btn.dataset.group;
-      const direction = btn.dataset.direction;
-      await moveGroup(groupName, direction);
+      const index = parseInt(btn.dataset.index);
+      await toggleFavorite(index);
     });
   });
 }
@@ -344,21 +410,17 @@ async function editGroup(oldGroupName) {
   await displayEnvironments();
 }
 
-// グループを並び替え
-async function moveGroup(groupName, direction) {
+// グループを並び替え（ドラッグ&ドロップ用）
+async function reorderGroups(draggedGroupName, targetGroupName) {
   const groups = await getGroups();
-  const currentIndex = groups.indexOf(groupName);
+  const fromIndex = groups.indexOf(draggedGroupName);
+  const toIndex = groups.indexOf(targetGroupName);
   
-  if (currentIndex === -1) return;
+  if (fromIndex === -1 || toIndex === -1) return;
   
-  // 移動先のインデックスを計算
-  const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-  
-  // 範囲チェック
-  if (newIndex < 0 || newIndex >= groups.length) return;
-  
-  // 配列内で要素を入れ替え
-  [groups[currentIndex], groups[newIndex]] = [groups[newIndex], groups[currentIndex]];
+  // 配列内で要素を移動
+  const [movedGroup] = groups.splice(fromIndex, 1);
+  groups.splice(toIndex, 0, movedGroup);
   
   await saveGroups(groups);
   await displayEnvironments();
@@ -389,7 +451,9 @@ async function addEnvironment() {
     color,
     group: group || '',
     lastAccessed: null,
-    accessCount: 0
+    accessCount: 0,
+    isFavorite: false,
+    memo: ''
   });
   await saveEnvironments(environments);
   
@@ -446,6 +510,9 @@ async function editEnvironment(index) {
       radio.checked = true;
     }
   });
+
+  // メモを設定
+  document.getElementById('editEnvMemo').value = env.memo || '';
   
   // モーダルを表示
   console.log('Showing modal');
@@ -478,6 +545,8 @@ async function saveEdit() {
     return;
   }
   
+  const memo = document.getElementById('editEnvMemo').value.trim();
+  
   // 環境を更新
   const environments = await getEnvironments();
   environments[editingIndex] = {
@@ -485,7 +554,8 @@ async function saveEdit() {
     name,
     url,
     group: group || '',
-    color
+    color,
+    memo: memo || ''
   };
   
   await saveEnvironments(environments);
@@ -579,6 +649,7 @@ async function importEnvironments(file) {
       if (!env.lastAccessed) env.lastAccessed = null;
       if (!env.accessCount) env.accessCount = 0;
       if (!env.group) env.group = '';
+      if (env.isFavorite === undefined) env.isFavorite = false;
     }
     
     // インポート方法を選択
@@ -612,8 +683,90 @@ async function importEnvironments(file) {
   }
 }
 
+// テーマを取得
+async function getTheme() {
+  const result = await chrome.storage.sync.get(['theme']);
+  return result.theme || 'light';
+}
+
+// テーマを保存
+async function saveTheme(theme) {
+  await chrome.storage.sync.set({ theme });
+}
+
+// テーマを適用
+function applyTheme(theme) {
+  const body = document.body;
+  
+  if (theme === 'auto') {
+    // システム設定を確認
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) {
+      body.classList.add('dark-theme');
+    } else {
+      body.classList.remove('dark-theme');
+    }
+  } else if (theme === 'dark') {
+    body.classList.add('dark-theme');
+  } else {
+    body.classList.remove('dark-theme');
+  }
+  
+  currentTheme = theme;
+}
+
+// 設定モーダルを開く
+async function openSettingsModal() {
+  const theme = await getTheme();
+  document.getElementById('themeSelect').value = theme;
+  document.getElementById('settingsModal').classList.add('show');
+}
+
+// 設定モーダルを閉じる
+function closeSettingsModal() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
+
+// テーマ変更を保存
+async function saveThemeSettings() {
+  const theme = document.getElementById('themeSelect').value;
+  await saveTheme(theme);
+  applyTheme(theme);
+}
+
+// お気に入りを切り替え
+async function toggleFavorite(index) {
+  const environments = await getEnvironments();
+  environments[index].isFavorite = !environments[index].isFavorite;
+  await saveEnvironments(environments);
+  displayEnvironments();
+}
+
+// 環境の順序を入れ替え
+async function reorderEnvironments(fromIndex, toIndex) {
+  const environments = await getEnvironments();
+  
+  // 配列内で要素を移動
+  const [movedEnv] = environments.splice(fromIndex, 1);
+  environments.splice(toIndex, 0, movedEnv);
+  
+  await saveEnvironments(environments);
+  await displayEnvironments();
+}
+
 // 初期化
 document.addEventListener('DOMContentLoaded', async () => {
+  // テーマを読み込んで適用
+  const savedTheme = await getTheme();
+  applyTheme(savedTheme);
+  
+  // システム設定の変更を監視（autoモードの場合）
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (currentTheme === 'auto') {
+      applyTheme('auto');
+    }
+  });
+  
   await updateGroupSelect();
   await displayEnvironments();
   
@@ -662,6 +815,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('editModal').addEventListener('click', (e) => {
     if (e.target.id === 'editModal') {
       closeEditModal();
+    }
+  });
+  
+  // 設定ボタン
+  document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+  
+  // 設定モーダルを閉じる
+  document.getElementById('closeSettingsBtn').addEventListener('click', closeSettingsModal);
+  
+  // テーマ変更
+  document.getElementById('themeSelect').addEventListener('change', saveThemeSettings);
+  
+  // 設定モーダル背景クリックで閉じる
+  document.getElementById('settingsModal').addEventListener('click', (e) => {
+    if (e.target.id === 'settingsModal') {
+      closeSettingsModal();
     }
   });
 });
