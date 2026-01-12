@@ -1,7 +1,7 @@
 // タブが更新されたときに実行
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    updateBadge(tab.url);
+    updateIconAndBadge(tabId, tab.url);
   }
 });
 
@@ -9,13 +9,13 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onActivated.addListener((activeInfo) => {
   chrome.tabs.get(activeInfo.tabId, (tab) => {
     if (tab.url) {
-      updateBadge(tab.url);
+      updateIconAndBadge(activeInfo.tabId, tab.url);
     }
   });
 });
 
-// バッジを更新する関数
-async function updateBadge(url) {
+// アイコンとバッジを更新する関数
+async function updateIconAndBadge(tabId, url) {
   // 環境データを取得
   const result = await chrome.storage.sync.get(['environments']);
   const environments = result.environments || [];
@@ -24,13 +24,55 @@ async function updateBadge(url) {
   const currentEnv = environments.find(env => url.includes(getDomain(env.url)));
   
   if (currentEnv) {
-    // 一致する環境があればバッジを表示
-    chrome.action.setBadgeText({ text: currentEnv.name.substring(0, 4) });
-    chrome.action.setBadgeBackgroundColor({ color: currentEnv.color });
+    // 一致する環境があれば
+    // バッジを表示
+    chrome.action.setBadgeText({ text: currentEnv.name.substring(0, 4), tabId });
+    chrome.action.setBadgeBackgroundColor({ color: currentEnv.color, tabId });
+    
+    // アイコンの色を変更
+    await setIconColor(currentEnv.color, tabId);
   } else {
-    // 一致しなければバッジをクリア
-    chrome.action.setBadgeText({ text: '' });
+    // 一致しなければバッジをクリア＆デフォルトアイコン
+    chrome.action.setBadgeText({ text: '', tabId });
+    await setDefaultIcon(tabId);
   }
+}
+
+// 環境の色に応じたアイコンを設定
+async function setIconColor(color, tabId) {
+  const canvas = new OffscreenCanvas(128, 128);
+  const ctx = canvas.getContext('2d');
+  
+  // 背景色を設定
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 128, 128);
+  
+  // 白い円を描画
+  ctx.fillStyle = 'white';
+  ctx.beginPath();
+  ctx.arc(64, 64, 40, 0, 2 * Math.PI);
+  ctx.fill();
+  
+  // ImageDataを取得
+  const imageData = ctx.getImageData(0, 0, 128, 128);
+  
+  // アイコンを設定
+  chrome.action.setIcon({
+    imageData: imageData,
+    tabId: tabId
+  });
+}
+
+// デフォルトアイコンを設定
+async function setDefaultIcon(tabId) {
+  chrome.action.setIcon({
+    path: {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    tabId: tabId
+  });
 }
 
 // URLからドメインを抽出
