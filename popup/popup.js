@@ -125,12 +125,102 @@ function switchEnvironment(env) {
   });
 }
 
+// エクスポート機能
+async function exportEnvironments() {
+  const environments = await getEnvironments();
+  
+  if (environments.length === 0) {
+    alert('エクスポートする環境がありません');
+    return;
+  }
+  
+  // JSONファイルを生成
+  const dataStr = JSON.stringify(environments, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  
+  // ダウンロードリンクを作成
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `servicenow-environments-${new Date().toISOString().split('T')[0]}.json`;
+  
+  // ダウンロードを実行
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  
+  alert(`${environments.length}件の環境をエクスポートしました`);
+}
+
+// インポート機能
+async function importEnvironments(file) {
+  try {
+    const text = await file.text();
+    const importedEnvs = JSON.parse(text);
+    
+    // データの検証
+    if (!Array.isArray(importedEnvs)) {
+      throw new Error('無効なファイル形式です');
+    }
+    
+    // 各環境データの検証
+    for (const env of importedEnvs) {
+      if (!env.name || !env.url || !env.color) {
+        throw new Error('環境データに必須項目が不足しています');
+      }
+    }
+    
+    // インポート方法を選択
+    const merge = confirm(
+      `${importedEnvs.length}件の環境が見つかりました。\n\n` +
+      '「OK」: 既存の環境に追加\n' +
+      '「キャンセル」: 既存の環境を上書き'
+    );
+    
+    let environments;
+    if (merge) {
+      // 既存の環境に追加
+      const existingEnvs = await getEnvironments();
+      environments = [...existingEnvs, ...importedEnvs];
+    } else {
+      // 上書き
+      environments = importedEnvs;
+    }
+    
+    await saveEnvironments(environments);
+    displayEnvironments();
+    
+    alert(`${importedEnvs.length}件の環境をインポートしました`);
+  } catch (error) {
+    alert(`インポートに失敗しました: ${error.message}`);
+  }
+}
+
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
   displayEnvironments();
   
   // 追加ボタンのイベントリスナー
   document.getElementById('addEnvBtn').addEventListener('click', addEnvironment);
+  
+  // エクスポートボタン
+  document.getElementById('exportBtn').addEventListener('click', exportEnvironments);
+  
+  // インポートボタン
+  document.getElementById('importBtn').addEventListener('click', () => {
+    document.getElementById('importFile').click();
+  });
+
+  // インポートファイル選択
+  document.getElementById('importFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      importEnvironments(file);
+      // ファイル選択をリセット
+      e.target.value = '';
+    }
+  });
   
   // Enterキーで追加
   document.getElementById('envUrl').addEventListener('keypress', (e) => {
