@@ -121,11 +121,23 @@ button:hover {
   cursor: pointer;
   transition: all 0.2s;
   border-left: 4px solid;
+  background-color: #fafafa;
 }
 
 .env-item:hover {
   transform: translateX(4px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 現在の環境のスタイル */
+.env-item.current-env {
+  background-color: #e8f5e9;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  font-weight: 600;
+}
+
+.env-item.current-env:hover {
+  background-color: #c8e6c9;
 }
 
 .env-info {
@@ -137,6 +149,9 @@ button:hover {
   font-size: 14px;
   color: #333;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .env-url {
@@ -145,6 +160,17 @@ button:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 現在の環境バッジ */
+.current-badge {
+  display: inline-block;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
 }
 
 .delete-btn {

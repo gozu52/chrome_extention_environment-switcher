@@ -9,9 +9,27 @@ async function saveEnvironments(environments) {
   await chrome.storage.sync.set({ environments });
 }
 
+// 現在のタブのURLを取得
+async function getCurrentTabUrl() {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tabs[0]?.url || '';
+}
+
+// URLからドメインを抽出
+function getDomain(url) {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+  } catch (e) {
+    return '';
+  }
+}
+
 // 環境リストを表示
 async function displayEnvironments() {
   const environments = await getEnvironments();
+  const currentUrl = await getCurrentTabUrl();
+  const currentDomain = getDomain(currentUrl);
   const envList = document.getElementById('envList');
   
   if (environments.length === 0) {
@@ -19,15 +37,22 @@ async function displayEnvironments() {
     return;
   }
   
-  envList.innerHTML = environments.map((env, index) => `
-    <div class="env-item" style="border-left-color: ${env.color};" data-index="${index}">
-      <div class="env-info">
-        <div class="env-name">${env.name}</div>
-        <div class="env-url">${env.url}</div>
+  envList.innerHTML = environments.map((env, index) => {
+    const envDomain = getDomain(env.url);
+    const isCurrent = currentDomain && currentDomain === envDomain;
+    const currentClass = isCurrent ? 'current-env' : '';
+    const currentBadge = isCurrent ? '<span class="current-badge">現在の環境</span>' : '';
+    
+    return `
+      <div class="env-item ${currentClass}" style="border-left-color: ${env.color};" data-index="${index}">
+        <div class="env-info">
+          <div class="env-name">${env.name} ${currentBadge}</div>
+          <div class="env-url">${env.url}</div>
+        </div>
+        <button class="delete-btn" data-index="${index}">削除</button>
       </div>
-      <button class="delete-btn" data-index="${index}">削除</button>
-    </div>
-  `).join('');
+    `;
+  }).join('');
   
   // 環境クリックイベント
   document.querySelectorAll('.env-item').forEach(item => {
