@@ -578,9 +578,33 @@ async function switchEnvironment(env, index) {
   environments[index].accessCount = (environments[index].accessCount || 0) + 1;
   await saveEnvironments(environments);
   
+  // 同じレコードを保持する設定を取得
+  const preserveRecord = await getPreserveRecord();
+  
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0]) {
-      chrome.tabs.update(tabs[0].id, { url: env.url });
+      const currentUrl = tabs[0].url;
+      let targetUrl = env.url;
+      
+      // 設定がONで、現在のURLがServiceNowの場合、パスとパラメータを保持
+      if (preserveRecord && (currentUrl.includes('service-now.com') || currentUrl.includes('servicenow.com'))) {
+        try {
+          const currentUrlObj = new URL(currentUrl);
+          const targetUrlObj = new URL(env.url);
+          
+          // パスとクエリパラメータを保持
+          targetUrlObj.pathname = currentUrlObj.pathname;
+          targetUrlObj.search = currentUrlObj.search;
+          targetUrlObj.hash = currentUrlObj.hash;
+          
+          targetUrl = targetUrlObj.toString();
+        } catch (e) {
+          console.error('URL parsing error:', e);
+          // エラーの場合は通常のURL切り替え
+        }
+      }
+      
+      chrome.tabs.update(tabs[0].id, { url: targetUrl });
       window.close();
     }
   });
@@ -689,6 +713,39 @@ async function getTheme() {
   return result.theme || 'light';
 }
 
+// 同じレコードを保持する設定を取得
+async function getPreserveRecord() {
+  const result = await chrome.storage.sync.get(['preserveRecord']);
+  return result.preserveRecord !== false; // デフォルトはtrue
+}
+
+// 同じレコードを保持する設定を保存
+async function savePreserveRecord(preserve) {
+  await chrome.storage.sync.set({ preserveRecord: preserve });
+}
+
+// プリフィックス表示設定を取得
+async function getPrefixEnabled() {
+  const result = await chrome.storage.sync.get(['prefixEnabled']);
+  return result.prefixEnabled !== false; // デフォルトはtrue
+}
+
+// プリフィックス表示設定を保存
+async function savePrefixEnabled(enabled) {
+  await chrome.storage.sync.set({ prefixEnabled: enabled });
+  
+  // Content Scriptに設定変更を通知
+  chrome.tabs.query({}, (tabs) => {
+    tabs.forEach(tab => {
+      if (tab.url && (tab.url.includes('service-now.com') || tab.url.includes('servicenow.com'))) {
+        chrome.tabs.sendMessage(tab.id, { action: 'updatePrefix' }).catch(() => {
+          // エラーは無視（タブが対応していない場合）
+        });
+      }
+    });
+  });
+}
+
 // テーマを保存
 async function saveTheme(theme) {
   await chrome.storage.sync.set({ theme });
@@ -718,7 +775,13 @@ function applyTheme(theme) {
 // 設定モーダルを開く
 async function openSettingsModal() {
   const theme = await getTheme();
+  const preserveRecord = await getPreserveRecord();
+  const prefixEnabled = await getPrefixEnabled();
+  
   document.getElementById('themeSelect').value = theme;
+  document.getElementById('preserveRecordCheckbox').checked = preserveRecord;
+  document.getElementById('prefixEnabledCheckbox').checked = prefixEnabled;
+  
   document.getElementById('settingsModal').classList.add('show');
 }
 
@@ -827,6 +890,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // テーマ変更
   document.getElementById('themeSelect').addEventListener('change', saveThemeSettings);
   
+  // 同じレコード保持設定の変更
+  document.getElementById('preserveRecordCheckbox').addEventListener('change', async (e) => {
+    await savePreserveRecord(e.target.checked);
+  });
+
+  // プリフィックス表示設定の変更
+  document.getElementById('prefixEnabledCheckbox').addEventListener('change', async (e) => {
+    await savePrefixEnabled(e.target.checked);
+  });
+
   // 設定モーダル背景クリックで閉じる
   document.getElementById('settingsModal').addEventListener('click', (e) => {
     if (e.target.id === 'settingsModal') {
